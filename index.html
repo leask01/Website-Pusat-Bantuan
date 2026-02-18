@@ -1,270 +1,232 @@
 <!DOCTYPE html>
-<html lang="id" class="scroll-smooth">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Form Pengaduan Konsumen | PT Bungsu Mandiri Nawasena</title>
+    <title>Dashboard Pengaduan | BMN Internal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
     <style>
         body { font-family: 'Inter', sans-serif; }
-        textarea::-webkit-scrollbar { width: 8px; }
-        textarea::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
-        textarea::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
-        textarea::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        @media print { .no-print { display: none; } }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+<body class="bg-gray-50 text-slate-800 antialiased flex h-screen overflow-hidden">
 
-    <nav class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-        <div class="max-w-3xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="bg-slate-900 w-8 h-8 rounded flex items-center justify-center text-white border-b-2 border-[#ffa600]">
-                    <i class="fas fa-headset text-sm"></i>
-                </div>
-                <span class="font-bold text-slate-900 tracking-tight">Pusat Bantuan BMN</span>
-            </div>
-            <a href="index.html" class="text-sm font-semibold text-gray-500 hover:text-slate-900 flex items-center gap-2 transition-colors">
-                <i class="fas fa-arrow-left"></i> <span class="hidden sm:inline">Kembali</span>
+    <aside class="w-64 bg-slate-900 text-white flex flex-col hidden md:flex no-print">
+        <div class="h-16 flex items-center px-6 border-b border-slate-800">
+            <i class="fas fa-city text-[#ffa600] mr-2"></i>
+            <span class="font-bold text-lg tracking-tight">BMN Portal</span>
+        </div>
+        <nav class="flex-1 p-4 space-y-2">
+            <a href="#" class="flex items-center px-4 py-3 bg-[#ffa600] text-slate-900 rounded-lg font-bold">
+                <i class="fas fa-clipboard-list mr-3"></i> Data Pengaduan
             </a>
-        </div>
-    </nav>
+            <a href="index.html" class="flex items-center px-4 py-3 text-gray-400 hover:text-white transition">
+                <i class="fas fa-external-link-alt mr-3"></i> Lihat Web Form
+            </a>
+        </nav>
+    </aside>
 
-    <main class="flex-grow py-8 px-4 sm:px-6">
-        <div class="max-w-3xl mx-auto">
-            
-            <div class="mb-8 text-center sm:text-left">
-                <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">Form Keluhan Konsumen</h1>
-                <p class="text-gray-500 text-sm">Silakan pilih project dan nomor unit Anda sesuai data kepemilikan.</p>
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 no-print">
+            <h1 class="text-xl font-bold text-slate-900">Dashboard Monitoring Keluhan</h1>
+            <div class="relative">
+                <i class="fas fa-bell text-gray-400 text-xl"></i>
+                <span id="pendingCountBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 rounded-full hidden">0</span>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 no-print">
+                <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                    <p class="text-sm font-semibold text-gray-400 uppercase">Pending</p>
+                    <h2 id="statPending" class="text-3xl font-bold text-slate-900">0</h2>
+                </div>
+                <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                    <p class="text-sm font-semibold text-gray-400 uppercase text-blue-500">Diproses</p>
+                    <h2 id="statDiproses" class="text-3xl font-bold text-slate-900">0</h2>
+                </div>
+                <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                    <p class="text-sm font-semibold text-gray-400 uppercase text-green-500">Selesai</p>
+                    <h2 id="statSelesai" class="text-3xl font-bold text-slate-900">0</h2>
+                </div>
             </div>
 
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <form id="complaintForm" class="p-6 sm:p-8 space-y-8" onsubmit="event.preventDefault(); submitToSupabase();">
-                    
-                    <section>
-                        <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-2">
-                            <i class="fas fa-user text-[#ffa600]"></i> Data Pelapor
-                        </h2>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-1">Nama Konsumen <span class="text-red-500">*</span></label>
-                                <input type="text" id="nama_konsumen" required placeholder="Sesuai nama pemilik" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#ffa600] focus:border-[#ffa600] outline-none transition bg-slate-50 focus:bg-white text-sm">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-1">Nomor WA <span class="text-red-500">*</span></label>
-                                <input type="tel" id="no_wa" required placeholder="08xxxxxxxxxx" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#ffa600] focus:border-[#ffa600] outline-none transition bg-slate-50 focus:bg-white text-sm">
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-1">Pilih Project <span class="text-red-500">*</span></label>
-                                <select id="project" required onchange="updateUnitOptions()" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#ffa600] focus:border-[#ffa600] outline-none transition bg-slate-50 focus:bg-white text-sm cursor-pointer">
-                                    <option value="" disabled selected>Pilih Lokasi Cluster...</option>
-                                    <option value="Edelweis Residence 1">Edelweis Residence 4 (Verde House)</option>
-                                    <option value="Edelweis Residence 2">Edelweis Residence 2 (Pondok Rajeg)</option>
-                                    <option value="Edelweis Residence 3">Edelweis Residence 3 (Tegar Beriman)</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-1">Blok / Nomor Unit <span class="text-red-500">*</span></label>
-                                <select id="unit" required class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#ffa600] focus:border-[#ffa600] outline-none transition bg-slate-50 focus:bg-white text-sm cursor-pointer">
-                                    <option value="" disabled selected>Pilih Project dulu...</option>
-                                </select>
-                            </div>
-
-                            <div class="md:col-span-2">
-                                <label class="block text-sm font-semibold text-gray-700 mb-1">Tanggal Serah Terima Rumah (BAST) <span class="text-red-500">*</span></label>
-                                <input type="date" id="tgl_serah_terima" required class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#ffa600] focus:border-[#ffa600] outline-none transition bg-slate-50 focus:bg-white text-sm cursor-pointer">
-                            </div>
-                        </div>
-                    </section>
-
-                    <section>
-                        <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-2">
-                            <i class="fas fa-tools text-[#ffa600]"></i> Detail Keluhan
-                        </h2>
-                        <label class="block text-sm font-semibold text-gray-700 mb-3">Jenis Keluhan (Pilih Salah Satu) <span class="text-red-500">*</span></label>
-                        
-                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            <label class="cursor-pointer">
-                                <input type="radio" name="jenis_keluhan" value="Bangunan" class="peer hidden" required>
-                                <div class="p-3 border-2 border-gray-200 rounded-lg peer-checked:border-[#ffa600] peer-checked:bg-yellow-50 hover:bg-slate-50 transition flex flex-col items-center text-center gap-2">
-                                    <i class="fas fa-home text-gray-400 peer-checked:text-[#ffa600] text-xl"></i>
-                                    <span class="text-xs font-semibold text-gray-600 peer-checked:text-slate-900">Bangunan</span>
-                                </div>
-                            </label>
-                            <label class="cursor-pointer">
-                                <input type="radio" name="jenis_keluhan" value="Plumbing" class="peer hidden">
-                                <div class="p-3 border-2 border-gray-200 rounded-lg peer-checked:border-[#ffa600] peer-checked:bg-yellow-50 hover:bg-slate-50 transition flex flex-col items-center text-center gap-2">
-                                    <i class="fas fa-faucet text-gray-400 peer-checked:text-[#ffa600] text-xl"></i>
-                                    <span class="text-xs font-semibold text-gray-600 peer-checked:text-slate-900">Plumbing</span>
-                                </div>
-                            </label>
-                            <label class="cursor-pointer">
-                                <input type="radio" name="jenis_keluhan" value="Kelistrikan" class="peer hidden">
-                                <div class="p-3 border-2 border-gray-200 rounded-lg peer-checked:border-[#ffa600] peer-checked:bg-yellow-50 hover:bg-slate-50 transition flex flex-col items-center text-center gap-2">
-                                    <i class="fas fa-bolt text-gray-400 peer-checked:text-[#ffa600] text-xl"></i>
-                                    <span class="text-xs font-semibold text-gray-600 peer-checked:text-slate-900">Kelistrikan</span>
-                                </div>
-                            </label>
-                            <label class="cursor-pointer">
-                                <input type="radio" name="jenis_keluhan" value="Lingkungan" class="peer hidden">
-                                <div class="p-3 border-2 border-gray-200 rounded-lg peer-checked:border-[#ffa600] peer-checked:bg-yellow-50 hover:bg-slate-50 transition flex flex-col items-center text-center gap-2">
-                                    <i class="fas fa-road text-gray-400 peer-checked:text-[#ffa600] text-xl"></i>
-                                    <span class="text-xs font-semibold text-gray-600 peer-checked:text-slate-900">Lingkungan</span>
-                                </div>
-                            </label>
-                            <label class="cursor-pointer">
-                                <input type="radio" name="jenis_keluhan" value="Legalitas" class="peer hidden">
-                                <div class="p-3 border-2 border-gray-200 rounded-lg peer-checked:border-[#ffa600] peer-checked:bg-yellow-50 hover:bg-slate-50 transition flex flex-col items-center text-center gap-2">
-                                    <i class="fas fa-file-signature text-gray-400 peer-checked:text-[#ffa600] text-xl"></i>
-                                    <span class="text-xs font-semibold text-gray-600 peer-checked:text-slate-900">Legalitas</span>
-                                </div>
-                            </label>
-                            <label class="cursor-pointer">
-                                <input type="radio" name="jenis_keluhan" value="Lainnya" class="peer hidden">
-                                <div class="p-3 border-2 border-gray-200 rounded-lg peer-checked:border-[#ffa600] peer-checked:bg-yellow-50 hover:bg-slate-50 transition flex flex-col items-center text-center gap-2">
-                                    <i class="fas fa-ellipsis-h text-gray-400 peer-checked:text-[#ffa600] text-xl"></i>
-                                    <span class="text-xs font-semibold text-gray-600 peer-checked:text-slate-900">Lainnya</span>
-                                </div>
-                            </label>
-                        </div>
-
-                        <div class="mt-5">
-                            <label class="block text-sm font-semibold text-gray-700 mb-1">Detail Keluhan <span class="text-red-500">*</span></label>
-                            <textarea id="detail_keluhan" required rows="4" placeholder="Jelaskan secara detail masalah yang Anda alami..." class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#ffa600] focus:border-[#ffa600] outline-none transition bg-slate-50 focus:bg-white text-sm resize-y"></textarea>
-                        </div>
-                    </section>
-
-                    <div class="pt-4 border-t border-gray-100">
-                        <button type="submit" id="submitBtn" class="w-full bg-slate-900 text-white font-bold py-3.5 rounded-lg shadow-lg hover:bg-[#ffa600] hover:text-slate-900 transition-colors flex items-center justify-center gap-2">
-                            <i class="fas fa-paper-plane"></i> Kirim Laporan
-                        </button>
-                    </div>
-                </form>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="p-4 border-b border-gray-100 flex justify-between items-center no-print">
+                    <h3 class="font-bold">Daftar Laporan Masuk</h3>
+                    <button onclick="fetchComplaints()" class="text-sm text-[#ffa600] hover:underline"><i class="fas fa-sync-alt mr-1"></i> Refresh Data</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-50 text-gray-500 font-semibold uppercase text-xs">
+                            <tr>
+                                <th class="px-6 py-4">Tgl Masuk</th>
+                                <th class="px-6 py-4">Konsumen</th>
+                                <th class="px-6 py-4">Project / Unit</th>
+                                <th class="px-6 py-4">Kategori</th>
+                                <th class="px-6 py-4">Status</th>
+                                <th class="px-6 py-4 text-center no-print">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="complaintTableBody" class="divide-y divide-gray-100"></tbody>
+                    </table>
+                </div>
             </div>
-        </div>
-    </main>
-
-    <div id="successModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl p-8 max-w-sm w-full text-center transform scale-95 opacity-0 transition-all duration-300" id="modalContent">
-            <div class="w-16 h-16 bg-green-100 text-green-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
-                <i class="fas fa-check"></i>
-            </div>
-            <h3 class="text-xl font-bold text-slate-900 mb-2">Laporan Terkirim!</h3>
-            <p class="text-sm text-gray-500 mb-6">Laporan Anda sudah masuk ke sistem dan akan segera kami proses. Terima kasih.</p>
-            <button onclick="closeModal()" class="w-full bg-slate-100 text-slate-900 font-bold py-2.5 rounded-lg hover:bg-slate-200 transition">
-                Tutup
-            </button>
-        </div>
+        </main>
     </div>
 
     <script>
-        // INISIALISASI SUPABASE
         const supabaseUrl = 'https://wjmilsczkzoyijfrghmc.supabase.co'
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqbWlsc2N6a3pveWlqZnJnaG1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyMzIyNzQsImV4cCI6MjA4MTgwODI3NH0.-CXQ_HKRS23MX5mBwQVbaFlsOOlFjywMGPEJqWXXM2s'  
         const sb = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        // DATA UNIT DARI PDF (SEMUA UNIT)
-        const unitData = {
-            "Edelweis Residence 1": [
-                { blok: "A1", status: "Available" }, { blok: "A2", status: "Available" }, { blok: "A3", status: "Available" },
-                { blok: "A4", status: "Available" }, { blok: "A5", status: "Available" }, { blok: "A6", status: "Available" },
-                { blok: "A7", status: "Available" }, { blok: "A8", status: "Available" }, { blok: "B1", status: "Available" },
-                { blok: "B2", status: "Available" }, { blok: "B3", status: "Available" }, { blok: "B4", status: "Available" },
-                { blok: "B5", status: "Available" }, { blok: "B6", status: "Available" }, { blok: "B7", status: "Available" },
-                { blok: "B8", status: "Available" }, { blok: "B9", status: "Available" }, { blok: "B10", status: "Available" }
-            ],
-            "Edelweis Residence 2": [
-                { blok: "C1", status: "Available" }, { blok: "C2", status: "Available" }, { blok: "C3", status: "Available" },
-                { blok: "C4", status: "Available" }, { blok: "C5", status: "Available" }, { blok: "C6", status: "Available" },
-                { blok: "D1", status: "Available" }, { blok: "D2", status: "Available" }, { blok: "D3", status: "Available" },
-                { blok: "D4", status: "Available" }, { blok: "D5", status: "Available" }, { blok: "D6", status: "Available" },
-                { blok: "D7", status: "Available" }, { blok: "D8", status: "Available" }, { blok: "E1", status: "Available" },
-                { blok: "E2", status: "Available" }, { blok: "E3", status: "Available" }, { blok: "E4", status: "Available" },
-                { blok: "E5", status: "Available" }, { blok: "E6", status: "Available" }
-            ],
-            "Edelweis Residence 3": [
-                { blok: "A1", status: "Available" }, { blok: "A2", status: "Available" }, { blok: "A3", status: "Available" },
-                { blok: "A4", status: "Available" }, { blok: "A5", status: "Available" }, { blok: "A6", status: "Available" },
-                { blok: "A7", status: "Available" }, { blok: "A8", status: "Available" }, { blok: "A9", status: "Available" },
-                { blok: "B1", status: "Available" }, { blok: "B2", status: "Available" }, { blok: "B3", status: "Available" },
-                { blok: "B4", status: "Available" }, { blok: "B5", status: "Available" }, { blok: "B6", status: "Available" },
-                { blok: "C1", status: "Available" }, { blok: "C2", status: "Available" }, { blok: "C3", status: "Available" },
-                { blok: "C4", status: "Available" }, { blok: "C5", status: "Available" }
-            ]
-        };
+        let allComplaints = [];
 
-        // Update Dropdown Unit berdasarkan Project
-        function updateUnitOptions() {
-            const projectSelect = document.getElementById('project');
-            const unitSelect = document.getElementById('unit');
-            const selectedProject = projectSelect.value;
+        async function fetchComplaints() {
+            const { data, error } = await sb.from('pengaduan_konsumen').select('*').order('created_at', { ascending: false });
+            if (error) return;
+            allComplaints = data;
+            renderTable(data);
+            updateStats(data);
+        }
 
-            unitSelect.innerHTML = '<option value="" disabled selected>Pilih Unit...</option>';
+        function renderTable(data) {
+            const tbody = document.getElementById('complaintTableBody');
+            tbody.innerHTML = '';
+            data.forEach(item => {
+                const date = new Date(item.created_at).toLocaleDateString('id-ID');
+                let statusClass = item.status === "Diproses" ? "bg-blue-100 text-blue-600" : (item.status === "Selesai" ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-600");
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-6 py-4 font-medium">${date}</td>
+                    <td class="px-6 py-4 font-bold">${item.nama_konsumen}<br><span class="text-xs font-normal text-gray-400">${item.no_wa}</span></td>
+                    <td class="px-6 py-4">${item.project}<br><span class="font-semibold text-[#ffa600]">Blok ${item.unit}</span></td>
+                    <td class="px-6 py-4 font-bold text-xs uppercase">${item.jenis_keluhan}</td>
+                    <td class="px-6 py-4"><span class="px-3 py-1 rounded-full text-[11px] font-bold ${statusClass}">${item.status}</span></td>
+                    <td class="px-6 py-4 text-center no-print space-x-3">
+                        <button onclick="printComplaint(${item.id})" class="text-slate-400 hover:text-slate-900"><i class="fas fa-print"></i></button>
+                        <button onclick="updateStatusPrompt(${item.id}, '${item.status}')" class="text-slate-400 hover:text-[#ffa600]"><i class="fas fa-edit"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
 
-            if (unitData[selectedProject]) {
-                unitData[selectedProject].forEach(item => {
-                    const option = document.createElement('option');
-                    option.value = item.blok;
-                    option.textContent = item.status === "SOLD" ? `${item.blok} (SOLD)` : item.blok;
-                    unitSelect.appendChild(option);
-                });
+        function updateStats(data) {
+            const pending = data.filter(d => d.status === 'Pending').length;
+            document.getElementById('statPending').innerText = pending;
+            document.getElementById('statDiproses').innerText = data.filter(d => d.status === 'Diproses').length;
+            document.getElementById('statSelesai').innerText = data.filter(d => d.status === 'Selesai').length;
+            const badge = document.getElementById('pendingCountBadge');
+            badge.innerText = pending;
+            pending > 0 ? badge.classList.remove('hidden') : badge.classList.add('hidden');
+        }
+
+        async function updateStatusPrompt(id, current) {
+            const status = prompt("Ubah Status (Pending/Diproses/Selesai):", current);
+            if (status) {
+                await sb.from('pengaduan_konsumen').update({ status }).eq('id', id);
+                fetchComplaints();
             }
         }
 
-        // Submit Data ke Supabase
-        async function submitToSupabase() {
-            const btn = document.getElementById('submitBtn');
-            const originalBtnText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim...';
-            btn.disabled = true;
+        function printComplaint(id) {
+            const item = allComplaints.find(c => c.id === id);
+            if (!item) return;
 
-            const payload = {
-                nama_konsumen: document.getElementById('nama_konsumen').value,
-                no_wa: document.getElementById('no_wa').value,
-                project: document.getElementById('project').value,
-                unit: document.getElementById('unit').value,
-                tgl_serah_terima: document.getElementById('tgl_serah_terima').value,
-                jenis_keluhan: document.querySelector('input[name="jenis_keluhan"]:checked')?.value,
-                detail_keluhan: document.getElementById('detail_keluhan').value,
-                status: 'Pending'
-            };
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Print - ${item.nama_konsumen}</title>
+                    <style>
+                        body { font-family: 'Segoe UI', sans-serif; padding: 40px; color: #333; }
+                        .kop { display: flex; align-items: center; border-bottom: 3px double #000; padding-bottom: 15px; margin-bottom: 25px; }
+                        .kop img { width: 80px; height: auto; margin-right: 20px; }
+                        .kop-text h2 { margin: 0; font-size: 22px; color: #000; }
+                        .kop-text p { margin: 2px 0; font-size: 12px; }
+                        .title { text-align: center; font-size: 18px; font-weight: bold; text-decoration: underline; margin-bottom: 20px; margin-top: 10px; }
+                        table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+                        table td { padding: 12px; border: 1px solid #ddd; font-size: 14px; }
+                        .label { width: 30%; background: #f9f9f9; font-weight: bold; }
+                        
+                        /* BAGIAN TANDA TANGAN BERJEJER */
+                        .footer-container { 
+                            margin-top: 50px; 
+                            display: flex; 
+                            justify-content: space-between; 
+                            align-items: flex-start;
+                        }
+                        .sign-box { 
+                            text-align: center; 
+                            width: 30%; /* Biar bagi tiga rata */
+                        }
+                        .sign-box p { 
+                            margin-bottom: 80px; 
+                            font-weight: bold; 
+                            font-size: 14px; 
+                        }
+                        .sign-name {
+                            font-weight: bold;
+                            text-decoration: none;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="kop">
+                        <img src="gambar/logo_bmn.png" alt="Logo">
+                        <div class="kop-text">
+                            <h2>PT BUNGSU MANDIRI NAWASENA</h2>
+                            <p>Pusat Pengembangan Properti & Konstruksi</p>
+                            <p>Jl. Ambadar, Kec. Cibinong, Kab. Bogor, Jawa Barat</p>
+                        </div>
+                    </div>
+                    
+                    <div class="title">LAPORAN PENGADUAN KONSUMEN & SPK</div>
+                    <p style="text-align:right; font-size:12px; margin-bottom: 10px;">ID Laporan: #${item.id} | Tanggal: ${new Date(item.created_at).toLocaleDateString('id-ID')}</p>
 
-            const { data, error } = await sb.from('pengaduan_konsumen').insert([payload]);
+                    <table>
+                        <tr><td class="label">Nama Pemilik</td><td>${item.nama_konsumen}</td></tr>
+                        <tr><td class="label">No. WhatsApp</td><td>${item.no_wa}</td></tr>
+                        <tr><td class="label">Project / Cluster</td><td>${item.project}</td></tr>
+                        <tr><td class="label">Blok / No. Unit</td><td>${item.unit}</td></tr>
+                        <tr><td class="label">Tgl. Serah Terima</td><td>${item.tgl_serah_terima}</td></tr>
+                        <tr><td class="label">Kategori Keluhan</td><td><b>${item.jenis_keluhan.toUpperCase()}</b></td></tr>
+                        <tr><td class="label" style="vertical-align:top">Detail Masalah</td><td height="120" style="vertical-align:top">${item.detail_keluhan}</td></tr>
+                    </table>
 
-            btn.innerHTML = originalBtnText;
-            btn.disabled = false;
+                    <div class="footer-container">
+                        <div class="sign-box">
+                            <p>Pelapor / Konsumen</p>
+                            <span class="sign-name">( __________________ )</span>
+                        </div>
+                        <div class="sign-box">
+                            <p>Penerima Komplain</p>
+                            <span class="sign-name">( __________________ )</span>
+                        </div>
+                        <div class="sign-box">
+                            <p>Tim Lapangan</p>
+                            <span class="sign-name">( __________________ )</span>
+                        </div>
+                    </div>
 
-            if (error) {
-                alert('Gagal mengirim: ' + error.message);
-            } else {
-                showSuccessModal();
-            }
+                    <script>
+                        window.onload = function() { 
+                            window.print(); 
+                            // window.close(); // Opsional: hapus komentar ini jika mau tab langsung tutup setelah print
+                        };
+                    <\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
         }
 
-        function showSuccessModal() {
-            const modal = document.getElementById('successModal');
-            const modalContent = document.getElementById('modalContent');
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                modalContent.classList.remove('scale-95', 'opacity-0');
-                modalContent.classList.add('scale-100', 'opacity-100');
-            }, 10);
-        }
-
-        function closeModal() {
-            document.getElementById('complaintForm').reset();
-            const modal = document.getElementById('successModal');
-            const modalContent = document.getElementById('modalContent');
-            modalContent.classList.remove('scale-100', 'opacity-100');
-            modalContent.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => { modal.classList.add('hidden'); window.scrollTo(0, 0); }, 300);
-        }
+        document.addEventListener('DOMContentLoaded', fetchComplaints);
     </script>
 </body>
 </html>
